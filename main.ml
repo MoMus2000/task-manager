@@ -4,8 +4,8 @@ open Utils
 let default_config: Utils.config = {
   filename = "";
   version  = "v0.0.0";
-  filetype = "python";
   recursive = false;
+  recursive_path = "";
 }
 
 let print_usage() = 
@@ -15,7 +15,6 @@ Options:
   -h, --help        Show the help message and exit
   -v, --version     Show program version
   -f, --file-name   File-name to check
-  -t, --file-type   File-type to check (py, c, go)
   -r, --recursive   Check the entire child file tree
   " in
   print_endline usage_string
@@ -48,8 +47,15 @@ let rec parse_args (config: config) (args: string list) =
   match args with
   | [] ->
       begin match config with 
-      | {filename; recursive; } -> 
-          if recursive then
+      | {filename; recursive; recursive_path;} -> 
+          if recursive && Sys.file_exists recursive_path then
+            let files = Task.walk (recursive_path) in
+            let func filename =
+              let result = read_file filename in
+              Task.process_file_for_todos config result
+            in
+            List.iter func files
+          else if recursive then
             let files = Task.walk (Sys.getcwd ()) in
             let func filename =
               let result = read_file filename in
@@ -60,13 +66,16 @@ let rec parse_args (config: config) (args: string list) =
           let result = read_file filename in
           Task.process_file_for_todos config result
       end
+  | "-r"::path::rest | "--recursive"::path::rest ->
+      parse_args {
+        config with 
+        recursive=true;
+        recursive_path = path;
+      } rest;
   | "-r":: rest | "--recursive"::rest ->
       parse_args {config with recursive=true} rest;
   | "-f":: file_name:: rest | "--filename"::file_name::rest ->
       parse_args {config with filename=file_name} rest;
-  | "-t":: extension :: rest | "--filetype":: extension ::rest ->
-      Printf.printf "Got Extension %s\n" extension;
-      parse_args {config with filetype=extension} rest;
   | "-f" :: _ | "--filename"::_ ->
       Printf.printf "Missing Filename\n";
       print_usage();

@@ -32,21 +32,7 @@ let rec process_line (regex) (acc : string list) (lines: string list) : string l
   end
 
 let process_file_for_todos (config: Utils.config) (lines: string list) = 
-  let regex = 
-    match config.filetype with
-    | "py" ->
-        (* Python: #, ##, ###, etc. *)
-        Str.regexp_case_fold "#+ *TODO *:* *"
-    | "c" ->
-        (* C: //, ///, //// etc. *)
-        Str.regexp_case_fold "//+ *TODO *:* *"
-    | "go" ->
-        (* Go: same as C for // comments *)
-        Str.regexp_case_fold "//+ *TODO *:* *"
-    | _ ->
-        (* fallback: any comment starter that makes sense *)
-        Str.regexp_case_fold "\\(#\\|//\\) *TODO *:* *"
-  in
+  let regex = Str.regexp_case_fold "\\(#\\|//\\) *TODO *:* *" in
   let filtered = process_line regex [] lines in
     let rec print lines = 
       match lines with
@@ -54,5 +40,5 @@ let process_file_for_todos (config: Utils.config) (lines: string list) =
           Printf.printf "%s\n" head;
           print tail
       | [] -> ()
-    in print filtered;
+  in print filtered
 
