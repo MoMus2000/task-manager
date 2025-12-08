@@ -82,6 +82,8 @@ sudo mv todo_linux_x86_64 /usr/local/bin/todo
 sudo chmod +x todo
 ```
 
+## Build From Source
+
 ### Note: Opam / Dune / Ocamlc Needed For Manual Build
 
 ```sh
