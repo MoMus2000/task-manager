@@ -1,6 +1,6 @@
 type config = {
   filename: string;
-  version : string;
+  verbose : bool;
   recursive: bool;
   recursive_path: string;
 }

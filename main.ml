@@ -3,7 +3,7 @@ open Utils
 
 let default_config: Utils.config = {
   filename = "";
-  version  = "v0.0.0";
+  verbose  = false;
   recursive = false;
   recursive_path = "";
 }
@@ -13,7 +13,7 @@ let print_usage() =
 Usage: TODO Checker [options] <arguments>
 Options:
   -h, --help        Show the help message and exit
-  -v, --version     Show program version
+  -v, --verbose     Show the git blame
   -f, --file-name   File-name to check
   -r, --recursive   Check the entire child file tree
   " in
@@ -48,13 +48,15 @@ let rec parse_args (config: config) (args: string list) =
   | [] ->
       begin match config with 
       | {filename; recursive; recursive_path;} -> 
-          if recursive && Sys.file_exists recursive_path then
+          if recursive && Sys.file_exists recursive_path then begin
+            Task.print_table(config);
             let files = Task.walk (recursive_path) in
             let func filename =
               let result = read_file filename in
               Task.process_file_for_todos {config with filename=filename} result
             in
             List.iter func files
+          end
           else if recursive then
             let files = Task.walk (Sys.getcwd ()) in
             let func filename =
@@ -80,9 +82,8 @@ let rec parse_args (config: config) (args: string list) =
       Printf.printf "Missing Filename\n";
       print_usage();
       exit(1);
-  | "-v":: _ | "--version" :: _ ->
-      Printf.printf "%s\n" config.version;
-      exit(0);
+  | "-v":: rest | "--verbose" :: rest ->
+      parse_args {config with verbose=true} rest;
   | "-h" :: _ | "--help" :: _ ->
       print_usage();
       exit(1);

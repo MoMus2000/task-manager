@@ -1,3 +1,4 @@
+open Unix
 open Utils
 open Str
 
@@ -30,6 +31,41 @@ let rec process_line (regex) (acc) (counter: int) (lines: string list) =
   | [] -> List.rev acc
   end
 
+
+let parse_git_blame cmd =
+  let ic  = Unix.open_process_in cmd in
+  let buf = Buffer.create 128 in
+  ( try
+    while true do
+      Buffer.add_string buf (input_line ic);
+      Buffer.add_char buf '\n'
+    done
+  with End_of_file -> ()
+  );
+  let _ = Unix.close_process_in ic in
+  let contents = Buffer.contents buf in
+  match String.split_on_char '(' contents with
+  | [] -> ()
+  | _ :: [] -> ()
+  | _ :: rest :: _ -> 
+      let meat = String.trim rest in
+        match String.split_on_char ' ' meat with
+        | name1:: _ :: t1:: t2:: rest ->
+            Printf.printf "%-7s %-10s" name1 t1;
+        | unknown :: _ -> ()
+        | [] -> ()
+
+
+let print_table config =
+  if config.verbose then begin
+    Printf.printf "%-19s %4s  %-20s %s\n" "Blame" "Line" "File" "TODO";
+    Printf.printf "%-8s %-10s %4s %-20s %s\n" "--------" "----------" "----" "--------------------" "-------------------------------";
+  end
+  else begin
+    Printf.printf "Line  File                         TODO\n";
+    Printf.printf "----  --------------------         -------------------------------\n"
+  end
+
 let process_file_for_todos (config: Utils.config) (lines: string list) = 
   let regex = Str.regexp_case_fold
   "[ \t]*[^ \t\\w]*\\(/\\*\\*\\*\\|/\\*\\*\\|\\*/\\*\\*\\|\\*\\|//\\|#\\|'\\|--\\|%\\|;\\|\\\"\\\"\\\"\\|'''\\) *TODO[\\-()]? *:* *"
@@ -38,7 +74,10 @@ let process_file_for_todos (config: Utils.config) (lines: string list) =
     let rec print lines = 
       match lines with
       | (head, lineno) :: tail ->
-          Printf.printf "%3d. [Fname: %s] %s\n" lineno config.filename head;
+          if config.verbose then
+            parse_git_blame (Printf.sprintf "git blame -L %d,%d %s" 
+              lineno lineno config.filename);
+          Printf.printf "%4d. %-30s %s\n" lineno config.filename head;
           print tail
       | [] -> ()
   in print filtered
