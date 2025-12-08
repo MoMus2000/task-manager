@@ -42,18 +42,23 @@ let parse_git_blame cmd =
     done
   with End_of_file -> ()
   );
-  let _ = Unix.close_process_in ic in
-  let contents = Buffer.contents buf in
-  match String.split_on_char '(' contents with
-  | [] -> ()
-  | _ :: [] -> ()
-  | _ :: rest :: _ -> 
-      let meat = String.trim rest in
-        match String.split_on_char ' ' meat with
-        | name1:: _ :: t1:: t2:: rest ->
-            Printf.printf "%-7s %-10s" name1 t1;
-        | unknown :: _ -> ()
-        | [] -> ()
+  let status = Unix.close_process_in ic in
+  match status with
+  | Unix.WEXITED 0 ->
+    let contents = Buffer.contents buf in
+    (match String.split_on_char '(' contents with
+    | [] -> ()
+    | _ :: [] -> ()
+    | _ :: rest :: _ -> 
+        let meat = String.trim rest in
+          match String.split_on_char ' ' meat with
+          | name1:: _ :: t1:: t2:: rest ->
+              Printf.printf "%-7s %-10s" name1 t1;
+          | unknown :: _ -> ()
+          | [] -> ()
+    )
+  | Unix.WEXITED 1 -> ()
+  | _ -> ()
 
 
 let print_table config =
@@ -75,7 +80,7 @@ let process_file_for_todos (config: Utils.config) (lines: string list) =
       match lines with
       | (head, lineno) :: tail ->
           if config.verbose then
-            parse_git_blame (Printf.sprintf "git blame -L %d,%d %s" 
+            parse_git_blame (Printf.sprintf "git blame -L %d,%d %s 2>&1" 
               lineno lineno config.filename);
           let trimmed_filename = 
             match List.rev (String.split_on_char '/' config.filename) with
