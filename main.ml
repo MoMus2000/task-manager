@@ -68,14 +68,12 @@ let rec parse_args (config: config) (args: string list) =
           let result = read_file filename in
           Task.process_file_for_todos config result
       end
-  | "-r"::path::rest | "--recursive"::path::rest ->
+  | "-r"::rest | "--recursive"::rest->
       parse_args {
         config with 
         recursive=true;
-        recursive_path = path;
+        recursive_path = Sys.getcwd();
       } rest;
-  | "-r":: rest | "--recursive"::rest ->
-      parse_args {config with recursive=true} rest;
   | "-f":: file_name:: rest | "--filename"::file_name::rest ->
       parse_args {config with filename=file_name} rest;
   | "-f" :: _ | "--filename"::_ ->
