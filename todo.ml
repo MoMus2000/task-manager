@@ -39,15 +39,20 @@ let rec parse_args (config: Utils.config) (args: string list) =
       | {filename; recursive; _ } -> 
           if (String.equal filename "") && recursive then begin
             let files = Task.walk (".") in
-            let func filename =
-              let result = read_file filename in
-              Task.process_file_for_todos {config with filename=filename} result
+            let func fname =
+              let result = read_file fname in
+              Task.process_file_for_todos {config with filename=fname} result
             in
-            List.iter func files
+            Issues.push_issues_to_git_tracker(List.concat_map func files);
           end
           else if filename <> "" && not recursive then begin
             let result = read_file filename in
-            Task.process_file_for_todos config result
+            let output = Task.process_file_for_todos config result in 
+              match output with
+              | (a , b , c) :: _ ->
+                  Printf.printf "%s %d %b" a b c;
+                  ()
+              | _ -> ()
           end
           else begin
             print_usage();

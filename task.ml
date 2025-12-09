@@ -76,8 +76,8 @@ let process_file_for_todos (config: Utils.config) (lines: string list) =
   let filtered = process_line regex [] 1 lines in
     let rec print lines = 
       match lines with
-      | (head, lineno, is_issue) :: tail ->
-          if config.verbose then
+      | (head, lineno, _) :: tail ->
+          if config.verbose then 
             parse_git_blame (Printf.sprintf "git blame -L %d,%d %s 2>&1" 
               lineno lineno config.filename);
           let trimmed_filename = 
@@ -89,5 +89,6 @@ let process_file_for_todos (config: Utils.config) (lines: string list) =
           Printf.printf "%4d. %-30s %s\n" lineno trimmed_filename head;
           print tail
       | [] -> ()
-  in print filtered
+    in print filtered;
+    filtered
 
