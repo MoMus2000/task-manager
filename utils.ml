@@ -3,4 +3,5 @@ type config = {
   verbose : bool;
   recursive: bool;
   recursive_path: string;
+  create_issues: bool;
 }

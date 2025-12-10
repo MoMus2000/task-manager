@@ -3,17 +3,19 @@ let default_config: Utils.config = {
   verbose  = false;
   recursive = false;
   recursive_path = "";
+  create_issues = false;
 }
 
 let print_usage() = 
   let usage_string = "
 Usage: TODO Checker [options] <arguments>
 Options:
-  -h, --help        Show the help message and exit
-  -v, --verbose     Show git blame info
-                    (Blame is only included when --verbose is enabled)
-  -f, --file-name   File-name to check
-  -r, --recursive   Check the entire child file tree
+  -h, --help          Show the help message and exit
+  -v, --verbose       Show git blame info
+                      (Blame is only included when --verbose is enabled)
+  -f, --file-name     File-name to check
+  -r, --recursive     Check the entire child file tree
+  -i, --create-issue  Create Issues After Search
 
 Output:
 [Line][File][TODO] | [Blame][Line][File][TODO]
@@ -36,14 +38,14 @@ let rec parse_args (config: Utils.config) (args: string list) =
   match args with
   | [] ->
       begin match config with 
-      | {filename; recursive; _ } -> 
+      | {filename; recursive; create_issues; _ } -> 
           if (String.equal filename "") && recursive then begin
             let files = Task.walk (".") in
             let func fname =
               let result = read_file fname in
               Task.process_file_for_todos {config with filename=fname} result
             in
-            Issues.push_issues_to_git_tracker(List.concat_map func files);
+            Issues.push_issues_to_git_tracker create_issues (List.concat_map func files);
           end
           else if filename <> "" && not recursive then begin
             let result = read_file filename in
@@ -59,6 +61,16 @@ let rec parse_args (config: Utils.config) (args: string list) =
             exit(1)
           end
       end
+  | "-i"::rest | "--create-issue"::rest->
+      (match Sys.getenv_opt "GITHUB_TOKEN" with
+      | Some token when token <> "" ->
+        parse_args {
+          config with
+          create_issues = true
+        } rest;
+      | _ ->
+          exit(1)
+      )
   | "-r"::rest | "--recursive"::rest->
       parse_args {
         config with 

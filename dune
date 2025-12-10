@@ -1,5 +1,5 @@
 (executable
  (name todo)
- (libraries unix str)               ; <--- Add this line
+ (libraries unix str curl)               ; <--- Add this line
  ; (flags (:standard -warn-error -A))
 )
